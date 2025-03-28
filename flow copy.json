@@ -1,0 +1,58 @@
+{
+  "start": {
+    "message": "Olá, vamos começar sua entrevista. Qual é o seu nome?",
+    "next_state": "pergunta_1",
+    "variable": {
+      "name": "nome_usuario",
+      "type": "str"
+    }
+  },
+  "pergunta_1": {
+    "message": "Qual é a sua idade?",
+    "next_state": "pergunta_2",
+    "variable": {
+      "name": "idade_usuario",
+      "type": "str"
+    }
+  },
+  "pergunta_2": {
+    "message": "Onde você mora?",
+    "next_state": "pergunta_3",
+    "variable": {
+      "name": "cidade_usuario",
+      "type": "str"
+    }
+  },
+  "pergunta_3": {
+    "message": "Qual é a sua formação acadêmica?",
+    "next_state": "pergunta_4",
+    "variable": {
+      "name": "formacao_usuario",
+      "type": "str"
+    }
+  },
+  "pergunta_4": {
+    "message": "Qual é a sua experiência profissional?",
+    "next_state": "pergunta_5",
+    "variable": {
+      "name": "experiencia_usuario",
+      "type": "str"
+    }
+  },
+  "pergunta_5": {
+    "message": "Por que você deseja trabalhar conosco?",
+    "next_state": "end",
+    "variable": {
+      "name": "motivo_usuario",
+      "type": "str"
+    }
+  },
+  "end": {
+    "message": "Obrigado por participar da entrevista, #nome_usuario! Seus dados foram registrados.\n\nAqui estão suas respostas:\n\nNome: #nome_usuario\nIdade: #idade_usuario\nCidade: #cidade_usuario\nFormação: #formacao_usuario\nExperiência: #experiencia_usuario\nMotivo: #motivo_usuario",
+     "next_state": null
+  },
+  "error": {
+    "message": "Desculpe, houve um erro. Por favor, tente novamente!",
+    "next_state": "start"
+  }
+}

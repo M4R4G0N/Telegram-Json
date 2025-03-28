@@ -1,0 +1,59 @@
+{
+    "start": {
+      "message": "Olá, como posso te ajudar?",
+      "next_state": "opcao_1",
+      "options": [
+        {
+          "text": "Opção 1",
+          "next_state": "opcao_1"
+        }
+      ]
+    },
+    "opcao_1": {
+      "message": "Você escolheu a opção 1. O que deseja fazer?",
+      "options": [
+        {
+          "text": "Opção A",
+          "next_state": "opcao_A"
+        },
+        {
+          "text": "Opção B",
+          "next_state": "opcao_B"
+        },
+        {
+          "text": "Opção C",
+          "next_state": "opcao_C"
+        }
+      ]
+    },
+    "opcao_A": {
+      "message": "Qual é seu nome?",
+      "next_state": "opcao_D",
+      "variable": {
+        "name":"nome_usuario",
+        "type":"str"
+      }
+    },
+    "opcao_B": {
+      "message": "Você escolheu a opção B.",
+      "next_state": "end"
+    },
+    "opcao_C": {
+      "message": "Você escolheu a opção C.",
+      "next_state": "end"
+    },
+    "opcao_D": {
+      "message": "olá #nome_usuario você escolheu a opção D.",
+      "next_state": "end"
+    },
+
+    "end": {
+      "message": "Obrigado por usar nosso serviço!",
+      "next_state": null
+    },
+    "error": {
+      "message": "Opção invalida, escolha a opção novamente!",
+      "next_state": "reset_question"
+    }
+  }
+  
