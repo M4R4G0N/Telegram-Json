@@ -11,6 +11,9 @@ def get_token():
         return token.get("token")
 
 async def start(update: Update, context: CallbackContext):
+    '''
+    Função: Start, carrega o fluxo de conversa e inicia
+    '''
     flow_data = load_flow()
     context.user_data['responses'] = {}
     context.user_data['current_state'] = 'start'
