@@ -1,77 +1,145 @@
-# Explicação do Código: **Função `send_options`**
+# Telegram Bot Flow Management - Code Overview
 
-## Introdução
-A função `async def send_options(update: Update, context: CallbackContext)` faz parte de um fluxo de interação em um bot desenvolvido com Python, utilizando a biblioteca `python-telegram-bot`. Esta função implementa um sistema de navegação baseado em estados, que envia mensagens e botões interativos ao usuário com base no estado atual do fluxo armazenado em `context.user_data`.
+Este markdown descreve o código Python que cria e gerencia um bot no Telegram usando **Python-Telegram-Bot** e um fluxo dinâmico armazenado em arquivos JSON. Abaixo, apresentamos o funcionamento, principais funções e o fluxo lógico do código.
 
+---
 
-## Estrutura e Lógica do Código
+## Estrutura do Código
 
-### 1. **Recuperação do Estado Atual**
+### **1. Importação de Bibliotecas**
 ```python
-current_state = context.user_data.get('current_state', 'start')
-flow_data = context.user_data.get('flow_data', {})
+import json
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext, filters
 ```
-- O estado atual (current_state) é recuperado dos dados do usuário no contexto (context.user_data).
+Essas bibliotecas permitem a criação de mensagens, botões inline e o gerenciamento de eventos e comandos no bot.
 
-- Caso não haja um estado definido, o estado inicial será 'start'.
+---
 
-- flow_data contém os dados do fluxo, como mensagens, estados seguintes e opções.
-
-### 2. Verificação de Estado e Atualização
+### **2. Carregamento do Fluxo e Token**
 ```python
-if current_state in flow_data:
-    state_data = flow_data[current_state]
-    next_state = state_data.get('next_state')
-    context.user_data['current_state'] = next_state
+def load_flow():
+    with open('flow.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def get_token():
+    with open('token.json', 'r', encoding='utf-8') as f:
+        token = json.load(f)
+        return token.get("token")
 ```
+- **load_flow**: Carrega o arquivo `flow.json`, que contém o fluxo de diálogo.
+- **get_token**: Obtém o token do bot a partir do arquivo `token.json`.
 
-A função verifica se o estado atual está definido em flow_data. Se sim, extrai os dados associados a esse estado (state_data).
+---
 
-- Obtém o próximo estado (next_state) e atualiza o estado do usuário para que o fluxo continue.
-
-### 3. Criação de Botões Interativos (InlineKeyboardButton)
+### **3. Função `start`: Início do Fluxo**
 ```python
-if 'options' in state_data:
-    keyboard = [
-        [InlineKeyboardButton(option['text'], callback_data=option['next_state']) for option in state_data['options']]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(state_data['message'], reply_markup=reply_markup)
+async def start(update: Update, context: CallbackContext):
+    flow_data = load_flow()
+    context.user_data['responses'] = {}
+    context.user_data['current_state'] = 'start'
+    context.user_data['flow_data'] = flow_data
 ```
-- Se o estado atual contém opções, a função cria um teclado inline usando InlineKeyboardButton.
+Esta função inicializa o fluxo de conversa, armazenando o estado atual, respostas do usuário e o fluxo completo em `context.user_data`.
 
-- Cada botão exibe o texto definido em `option['text']` e armazena o estado seguinte em callback_data.
+- **Envio de mensagem ou opções de escolha**:
+  ```python
+  if 'variable' in state_data:
+      await context.bot.send_message(chat_id=update.effective_chat.id, text=state_data['message'])
+  else:
+      await send_options(update, context)
+  ```
 
-- Um menu interativo é enviado ao usuário com a mensagem correspondente.
+---
 
-### 4. Envio de Mensagem Simples e Chamadas Recursivas
-
+### **4. Função `send_options`: Gerenciamento do Fluxo**
 ```python
-else:
-    if next_state:
-        await update.message.reply_text(state_data['message'])
+async def send_options(update: Update, context: CallbackContext):
+    current_state = context.user_data.get('current_state', 'start')
+    flow_data = context.user_data.get('flow_data', {})
+```
+Esta função gerencia o envio de mensagens e opções, avançando o estado de acordo com o fluxo definido.
+
+- **Substituição de variáveis dinâmicas**:
+  ```python
+  responses_list = [{f"#{key}": value} for key, value in context.user_data['responses'].items()]
+  for replaces in responses_list:
+      for key, value in replaces.items():
+          flow_data[current_state]['message'] = flow_data[current_state]['message'].replace(key, value)
+  ```
+
+- **Criação de botões inline**:
+  ```python
+  keyboard = [
+      [InlineKeyboardButton(option['text'], callback_data=option['next_state']) for option in state_data['options']]
+  ]
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  ```
+
+---
+
+### **5. Função `chooses`: Lidando com Cliques em Botões**
+```python
+async def chooses(update: Update, context: CallbackContext):
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        next_state = query.data
         context.user_data['current_state'] = next_state
-        await send_options(update, context)
 ```
-- Se não houver opções no estado atual, a função envia uma mensagem simples e atualiza o estado para o próximo.
+Esta função captura interações do usuário ao clicar em botões inline e avança o fluxo para o próximo estado.
 
-- A função é chamada recursivamente para continuar o fluxo automaticamente até alcançar o último estado.
+- **Manipulação de mensagens e estados finais**:
+  ```python
+  if next_state == 'end':
+      print('delete')
+      await query.message.reply_text(text=state_data['message'])
+      context.user_data['current_state'] = 'end'
+  ```
+
+---
+
+### **6. Função `main`: Configuração e Inicialização do Bot**
+```python
+def main():
+    token = get_token()
+    application = Application.builder().token(token).build()
+```
+- **Configuração de Handlers**:
+  ```python
+  start_handler = CommandHandler('start', start)
+  application.add_handler(start_handler)
+
+  message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, send_options)
+  application.add_handler(message_handler)
+
+  application.add_handler(CallbackQueryHandler(chooses))
+  ```
+  Aqui são configurados os handlers para comandos (`/start`), mensagens de texto e callbacks de botões.
+
+- **Execução do bot**:
+  ```python
+  application.run_polling()
+  ```
+
+---
+
+## Arquivos Utilizados
+- **flow.json**: Define o fluxo de diálogo do bot.
+- **token.json**: Armazena o token de autenticação do bot.
+
+---
 
 ## Resumo do Fluxo
-Este código implementa uma navegação baseada em estados para o bot do Telegram:
+1. O usuário inicia o bot com `/start`.
+2. O bot carrega o fluxo do arquivo JSON e envia a primeira mensagem ou opções.
+3. As respostas do usuário são armazenadas e as mensagens dinâmicas são geradas.
+4. O fluxo avança conforme definido no JSON, até atingir o estado final.
 
-- Recupera o estado atual do usuário.
+---
 
-- Envia uma mensagem com opções (botões) ou apenas uma mensagem simples.
-
-- Atualiza o estado e segue o fluxo.
-
-- O ciclo pode continuar recursivamente até que o fluxo de mensagens termine.
-
-### Possíveis Aplicações
-- Menus Dinâmicos em Bots: Criar fluxos personalizados, como menus interativos.
-
-- Navegação Multiestado: Avançar ou retornar em fluxos com base nas escolhas do usuário.
-
-- Automação de Respostas: Implementar sequências automáticas de mensagens com base em decisões predefinidas.
-
+## Possíveis Melhorias
+- **Tratamento de Erros**: Implementar handlers para capturar e tratar possíveis exceções.
+- **Mensagens de Log**: Adicionar mensagens de log para facilitar o debug.
+- **Validação de Dados**: Melhorar a validação das entradas do usuário.
+- **Personalização do Fluxo**: Tornar o fluxo mais flexível com condições dinâmicas e variáveis opcionais.
