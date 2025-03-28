@@ -142,4 +142,3 @@ def main():
 - **Tratamento de Erros**: Implementar handlers para capturar e tratar possíveis exceções.
 - **Mensagens de Log**: Adicionar mensagens de log para facilitar o debug.
 - **Validação de Dados**: Melhorar a validação das entradas do usuário.
-- **Personalização do Fluxo**: Tornar o fluxo mais flexível com condições dinâmicas e variáveis opcionais.
